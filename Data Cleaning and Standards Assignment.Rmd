@@ -2,10 +2,56 @@
 title: "Data Cleaning and Standards Assignment"
 output: html_document
 date: "2025-09-03"
+autor: "Sandra Jaskowiak"
 ---
+### Set Up -------------------------------------------------------------------
 
+## Install Packages that may be needed
 
 ```{r}
+install.packages("tidyverse")
+install.packages("palmerpenguins")
+install.packages("assertr")
+install.packages("lubridate")
+install.packages("stringdist")
+install.packages("GGally")
+install.packages("sf")
+install.packages("taxize")
+
+library(tidyverse)
+library(palmerpenguins)
+library(assertr)
+library(lubridate)
+library(stringdist)
+library(GGally)
+library(sf)
+library(taxize)
+```
+
+## Set up working directory and import files
+
+```{r}
+# Set working directory
+setwd("~/Simon Fraser University/Classes/Scientific Data Management for Ecology and Evolution")
+
+#Import data files
+
+#Template if only importing one file: my_data <- read.csv("your_file.csv") 
+
+myfiles <- list.files(path = "BWG_database_messy", pattern = "*.csv", full.names = TRUE)
+
+# import all required files as individual data frames, remove file path and file extensions
+list2env(
+  lapply(
+    setNames(myfiles, 
+             make.names(
+               gsub(".*1_", "", 
+                    tools::file_path_sans_ext(myfiles)))), 
+         read_csv), 
+  envir = .GlobalEnv)
 
 ```
+
+
+
 
