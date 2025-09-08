@@ -6,8 +6,7 @@ autor: "Sandra Jaskowiak"
 ---
 ### Set Up -------------------------------------------------------------------
 
-## Install Packages that may be needed
-
+Install Packages that may be needed
 ```{r}
 install.packages("tidyverse")
 install.packages("palmerpenguins")
@@ -18,6 +17,7 @@ install.packages("GGally")
 install.packages("sf")
 install.packages("taxize")
 
+library(readr)
 library(tidyverse)
 library(palmerpenguins)
 library(assertr)
@@ -28,30 +28,25 @@ library(sf)
 library(taxize)
 ```
 
-## Set up working directory and import files
-
+Set up working directory and import files
 ```{r}
 # Set working directory
-setwd("~/Simon Fraser University/Classes/Scientific Data Management for Ecology and Evolution")
+setwd("~/Simon Fraser University/Classes/Scientific Data Management for Ecology and Evolution/CIEE_Scientific-Data-Management")
 
 #Import data files
 
-#Template if only importing one file: my_data <- read.csv("your_file.csv") 
+######Template if only importing one file: my_data <- read.csv("your_file.csv") 
 
-myfiles <- list.files(path = "BWG_database_messy", pattern = "*.csv", full.names = TRUE)
+bromeliads_messy <- read_csv("BWG_database_messy/bwgv1_bromeliads_messy.csv")
 
-# import all required files as individual data frames, remove file path and file extensions
-list2env(
-  lapply(
-    setNames(myfiles, 
-             make.names(
-               gsub(".*1_", "", 
-                    tools::file_path_sans_ext(myfiles)))), 
-         read_csv), 
-  envir = .GlobalEnv)
 
 ```
 
-
+Explore the data
+```{r}
+dim(bromeliads_messy) # [1] 76 rows (observations) and 18 columns (variables)
+head(bromeliads_messy, 10) # view the first 10 rows of data
+str(bromeliads_messy) # check the structure of the dataset
+summary(bromeliads_messy) # summarize the dataset
 
 

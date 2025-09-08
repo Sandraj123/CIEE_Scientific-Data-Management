@@ -37,27 +37,54 @@ library(lubridate)
 
 ## what files are in the BWG data folder?
 myfiles <- list.files(path = "BWG_database/", pattern = "*.csv", full.names = TRUE)
+myfiles
 
 # import all tables as separate data frames, remove file path and file extensions (.csv)
 list2env(
   lapply(
     setNames(myfiles, 
-             make.names(gsub(".*1_", "", 
-                             tools::file_path_sans_ext(myfiles)))), 
-         read.csv), 
+             make.names(
+               gsub(".*1_", "", 
+                    tools::file_path_sans_ext(myfiles)))), 
+    read_csv), 
   envir = .GlobalEnv)
-
 
 # Questions ---------------------------------------------------------------
 
 ## 1: Create a new table that includes only bromeliads from the genus Vriesea 
 ## that are > 100 mL. Arrange this table by bromeliad volume (max_water variable)
 
+brom_Vriesea <- bromeliads %>% 
+  separate(col = species, 
+           into = c("Genus", "Species"), 
+           sep = "_", 
+           remove = FALSE) %>% 
+  filter(Genus == "Vriesea" & max_water > 100) %>% 
+  arrange(max_water) %>% 
+  print()
+
+
 ## 1a. How many Vriesea bromeliads have a volume > 100 mL
+
+count(brom_Vriesea)
+35
 
 ## 1b. What is the mean volume of this subset of Vriesea bromeliads?
 
+brom_Vriesea %>% 
+  summarize(mean_water = mean(max_water, na.rm = TRUE))
+#OR
+mean(brom_Vriesea$max_water)
+
 ## 1c. How many individual plants do we have for each species?
+
+brom_Vriesea %>%
+  count(species)
+
+#OR
+
+table(brom_Vriesea$species)
+
 
 
 ## 2: Use the "extended_diameter" variable to classify bromeliads by size.
@@ -65,6 +92,14 @@ list2env(
 ## Create a summary table that lists how many bromeliads of each Genus 
 ## (Guzmania vs. Vriesea) are in each size class
 
+bromeliads %>%
+  mutate(size_class = case_when(extended_diameter < 50 ~ "small",
+                                extended_diameter > 100 ~ "large", 
+                                TRUE ~ "medium")) %>% 
+  separate(species, into = c("genus", "drop"), sep = "_", remove = FALSE) %>% 
+  select(-drop) %>% 
+  group_by(genus, size_class) %>% 
+  tally()
 
 ## 3. What owner is associated with the most bromeliads, and who is associated 
 ## with the least?

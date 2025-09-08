@@ -1,0 +1,137 @@
+---
+title: "Data cleaning and standards assignment"
+author: "Katie Chettle - worked with Andie Siemens and Sandra Jaskowiak"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# The problem:
+
+# The solution:
+
+1. setup
+```{r}
+# clear environment
+rm(list=ls())
+
+# check if working directory is set to current folder
+getwd()  
+
+```
+
+2. Load necessary packages
+```{r}
+library(tidyverse)
+library(assertr)
+library(stringdist)
+```
+
+3. import files
+```{r}
+bromeliads_messy <- read.csv("BWG database messy/bwgv1_bromeliads_messy.csv", strip.white=TRUE)
+
+```
+
+4. initial exploration steps
+```{r}
+dim(bromeliads_messy) # [1] 76 rows (observations) and 18 columns (variables)
+head(bromeliads_messy, 5) # view the first 5 rows of data
+str(bromeliads_messy) # check the structure of the dataset
+summary(bromeliads_messy) # summarize the dataset
+```
+
+# Quality Control data cleaning task
+
+1. Perform quality control checks and address any errors on two 'character' columns and three 'numeric' measured variables in the bromeliads_messy dataset using reproducible techniques.
+
+# Two character columns: species and habitat 
+```{r}
+# DO WE NEED TO VISUALLY CHECK THE SPELLING ERRORS FIRST OR CAN WE JUST USE AMATCH TO INDENTIFY AND RESOLVE THE ERRORS MANUALLY?!
+# I KNOW HOW WE CAN CHECK VISUALLY BUT IT SEEMS REDUNDANT (see code below) 
+# BC WE DONT REALLY NEED IT TO DETERMINE CORRECT SPELLING RIGHT?
+
+# identify spelling errors by calculating mean max_water for each species and habitat
+bromeliads_messy %>% 
+  group_by(species, habitat) %>% 
+  summarise(mean_max_water = mean(max_water, na.rm = TRUE)) %>% 
+  view()
+
+## identify spelling errors in Genus by calculating mean max_water for each species and habitat
+bromeliads_messy %>% 
+separate(col = species, 
+           into = c("Genus", "Species"), 
+           sep = "[_ ]" , 
+           remove = FALSE) %>% 
+  group_by(Genus, Species) %>% 
+  summarise(mean_max_water = mean(max_water, na.rm = TRUE))
+  
+# six spelling errors identified for species: 'Guzmania', 'Guzmania sp', 'Guzmania sp.', 'Vriesea gladioliflora', 'Vrisea_sanguinolenta' and 'vriesea_sp'
+# two spelling errors identified for habitat: 'Past.' and 'Secondary'
+
+################################################################ MAYBE WE ONLY NEED TO INCLUDE WHATS BELOW THIS LINE
+# the correct spellings for species and habitat
+species.list <- c("Guzmania_sp",
+                 "Vriesea_gladioliflora",
+                 "Vriesea_kupperiana",
+                 "Vriesea_sanguinolenta",
+                 "Vriesea_sp")
+
+habitat.list <- c("pasture", "secondary")
+
+# identify and resolve spelling errors in species and habitat column using amatch()
+bromeliads_clean <- bromeliads_messy %>%
+                    mutate( 
+                          species_corrected = species.list[amatch(species, species.list, maxDist = 5)], 
+                          habitat_corrected = habitat.list[amatch(habitat, habitat.list, maxDist = 5)]
+                          )
+# ABOVE CODE EXPLAINED:
+## amatch() returns the position of the closest match in 'species.list' for each element in 'species'
+## 'maxDist = 5' allows for a maximum of 5 edits
+## species.list[...] replaces the output of amatch() (which is an integer vector) with the correct spelling (indicated in species.list)
+## mutate() adds a clean column named 'species_corrected'
+# -> the same process is applied for 'habitat'
+
+# Verify that spelling errors were corrected by calculating mean max_water for each species and habitat
+# 'group_by(species, species_corrected, habitat, habitat_corrected)' allows us compare original spelling to corrected spelling to ensure that errors were resolved correctly
+bromeliads_clean %>% 
+  group_by(species, species_corrected, habitat, habitat_corrected) %>% 
+  summarise(mean_max_water = mean(max_water, na.rm = TRUE))
+
+# the output (table) confirms that spelling errors have been resolved
+# therefore, it is safe to replace the original columns with the corrected columns -> doing so simplifies the dataset
+bromeliads_clean <- bromeliads_clean %>%
+                    relocate(species_corrected, .after = species) %>% # relocate the corrected columns to the original positions in the dataframe
+                    relocate(habitat_corrected, .after = habitat) %>%
+                    select(-c(species, habitat)) # remove the original species and habitat columns
+
+head(bromeliads_clean) # original columns have now been replaced with the corrected columns 
+```
+
+# Three numeric measured variables: max_water, longest_leaf, and total_detritus
+```{r}
+# Identify numeric errors/outliers for max_water, longest_leaf, and total_detritus using the following pipe function
+bromeliads_clean %>%
+  chain_start %>%
+  verify(nrow(.) == 76) %>% # verifies that there are 76 observations
+  assert(within_bounds(0, Inf), c(max_water, longest_leaf, total_detritus)) %>% # verifies that all measurements are positive (0 to infinity)
+  insist(within_n_mads(2), c(max_water, longest_leaf, total_detritus))  %>% # identifies outliers 
+  insist_rows(maha_dist, within_n_mads(4), c(max_water, longest_leaf, total_detritus)) %>% # identifies potential multivariate outliers
+  chain_end %>% 
+  group_by(species) %>%
+  summarise(mean_max_water = mean(max_water, na.rm = TRUE))
+
+# assertion failed, returning 37 errors:
+# verify() confirmed that there are 76 observations in the 'bromeliads messy' dataset
+# assert() identified -ve values for longest_leaf (-49) and total_detritus (-55.440263) 
+# insist() identified 14 outliers for max_water, 1 outlier for longest_leaf (-49; see above), and 15 outliers for total_detritus
+# insist_rows() also identified 5 rows that may be potential multivariate outliers
+
+############ NOW WE NEED TO CORRECT THESE ERRORS - BUT HOW?! ###################
+# DO WE REPLACE MAX_WATER OUTLIERS WITH NA? MAKE NEGATIVE VALUES POSITIVE? HOW DO WE ADDRESS POTENTIAL MULTIVARIATE OUTLIERS? 
+# we can visually see that the lowest max_water outlier is 550 so we can replace anything greater than 550 with NA
+#bromeliads_clean <- bromeliads_clean %>%
+#                    mutate(max_water = ifelse(max_water<550, max_water, NA_real_))
+# ISSUE WITH THIS IS MAYBE ITS NOT AS SIMPLE AS ALL VALUES HIGHER THAN 550 ARE OUTLIERS... MAYBE ITS SOME VALUES ARE LARGER AND SOME ARE SMALLER
+
+#see: https://www.youtube.com/watch?v=rbm2pYSPFlU
+```

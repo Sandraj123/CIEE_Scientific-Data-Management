@@ -1,0 +1,140 @@
+---
+title: "Data cleaning and standards assignment"
+author: "Katie J Chettle"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+# The problem:
+
+# The solution:
+
+1. setup
+```{r}
+# clear environment
+rm(list=ls())
+
+# check if working directory is set to current folder
+getwd()  
+
+```
+
+2. Load necessary packages
+```{r}
+library(tidyverse)
+library(lubridate)
+library(sf)
+library(taxize)
+```
+
+3. import files
+```{r}
+# list files in the "BWG database messy" folder
+data <- list.files(path = "BWG database messy/", pattern = "*.csv", full.names = TRUE)
+data
+
+# import all files as separate data frames, remove file path and file extensions (.csv)
+list2env(
+  lapply(
+    setNames(data, 
+             make.names(
+               gsub(".*1_", "", 
+                    tools::file_path_sans_ext(data)))), 
+         read_csv), 
+  envir = .GlobalEnv)
+```
+
+# The following code addresses the "Dates and coordinates" data cleaning task
+
+1. Look at the structure of each dataset contained in the database to find all dates and coordinates
+```{r}
+# NA = datasets that DO NOT contain columns with dates and coordinates
+# column names = datasets that DO contain columns with dates and coordinates
+
+str(abundance_messy) # NA
+str(bromeliads_messy) # collection_date
+str(datasets_messy) # lat, long, bwg_release, public_release
+str(owners_messy) # NA
+str(ownership_messy) # NA
+str(traits_messy) # NA
+str(visits_messy) # date, latitude, longitdue
+
+# bromeliads_messy, datasets_messy, and visits_messy datasets contain columns with dates and coordinates
+```
+
+2. Convert all dates to ISO standards (yyyy-mm-dd) using the LUBRIDATE function. Then check these dates are in the range 1997-2024.
+# bromeliads_messy dataset
+```{r}
+# check collection_date column to see date formats
+bromeliads_messy$collection_date ## ISSUE: THERE IS NO SUCH THING AS NOV 31
+
+# convert to date-time format
+corrected <- lubridate::parse_date_time(bromeliads_messy$collection_date, c("bdY", "mdY", "dbY", "dmy", "mdy", "Ymd")) # for some reason "07 November 2010", "11-06-10", and "2010-11-31" are not parsing correctly.
+
+```
+
+# datasets_messy dataset
+```{r}
+# check "bwg_release" and "public_release" column to see date formats
+datasets_messy$bwg_release
+datasets_messy$public_release
+
+# first, convert dates to ISO standard (yyyy-mm-dd)
+datasets_messy$bwg_release <- lubridate::parse_date_time(datasets_messy$bwg_release, c("dmY"))
+datasets_messy$public_release <- lubridate::parse_date_time(datasets_messy$public_release, c("mdY", "dmY")) #I DONT THINK THE SECOND LINE IS CONVERTING THE FIRST DATE CORRECTLY!!!!
+
+# next, convert ISO dates to date-times format
+datasets_messy$bwg_release <- as_date(datasets_messy$bwg_release)
+datasets_messy$public_release <- as_date(datasets_messy$public_release)
+
+# check that date is in ISO standard format
+datasets_messy$bwg_release 
+datasets_messy$public_release 
+# date is now in ISO standard (yyyy-mm-dd)
+
+# check that date is in date-time format
+class(datasets_messy$bwg_release)
+class(datasets_messy$public_release)
+# returns as "Date", confirming that it is in the date-time format
+```
+
+# visits_messy dataset
+```{r}
+# check "date" column to see date formats
+visits_messy$date # date is already in ISO standard (yyyy-mm-dd)
+class(visits_messy$date) # returns as "Date", confirming that it is in the date-time format
+```
+
+3. For the 'visits' dataframe, add columns for day, month, and year of each visit. Place these columns immediately after the date column. 
+```{r}
+separate(data = visits_messy, col = date,
+                    into = c("year", "month", "day"),
+                    sep = "-", remove = FALSE) %>% 
+  head()
+```
+
+4. Assign a coordinate reference system to all coordinates, and then project geographic coordinates. Make sure these coordinates are on planet Earth, i.e. somewhere between N and S poles.
+```{r}
+# access longitude and latitude values in the "datasets_messy" and "visits_messy" datasets
+xy_datasets <- datasets_messy[c("lng", "lat")]
+xy_datasets
+
+xy_visits <- visits_messy[c("longitude", "latitude")]
+xy_visits
+
+# convert coordinates to "SpatialPoints" for "datasets_messy" and "visits_messy" datasets
+xy_datasets <- st_as_sf(xy_datasets, 
+               coords = c("lng", "lat"),
+               crs = "+proj=longlat +datum=WGS84")
+
+xy_visits <- st_as_sf(xy_visits, 
+               coords = c("longitude", "latitude"),
+               crs = "+proj=longlat +datum=WGS84")
+
+# then transform to UTM coordinate system - NEED TO CONFIRM THAT ZONE 16 IS CORRECT
+xy_datasets_utm <- st_transform(xy_datasets, crs = "+proj=utm +zone=16 +datum=WGS84")
+xy_datasets_utm
+
+xy_visits_utm <- st_transform(xy_visits, crs = "+proj=utm +zone=16 +datum=WGS84")
+xy_visits_utm
+```
