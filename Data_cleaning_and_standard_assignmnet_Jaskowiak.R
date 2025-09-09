@@ -41,10 +41,10 @@ setwd("~/Simon Fraser University/Classes/Scientific Data Management for Ecology 
 bromeliads_messy <- read_csv("BWG_database_messy/bwgv1_bromeliads_messy.csv")
 
 #Explore the data
-dim(bromeliads_messy) # 76 rows and 18 columns- Varify that the number of rows reflects number of observations in your metadata
+dim(bromeliads_messy) # 76 rows and 18 columns- Verify that the number of rows reflects number of observations in your metadata
 head(bromeliads_messy, 10) # view first 10 rows of data
 str(bromeliads_messy) # check the structure
-summary(bromeliads_messy) # summarize the dataset
+summary(bromeliads_messy) # summarize the data set
 
 #make "n_rows" the number of rows in the data that you can plug into more complex operations later. Change as needed based on the metadata.
 n_rows <- 76 #change this number based on how many observations you know exist in the metadata
