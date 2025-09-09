@@ -23,23 +23,14 @@ autor: "Sandra Jaskowiak - with Andie Siemens and Katie Chettle"
 
 #Install Packages that may be needed
 install.packages("tidyverse")
-install.packages("palmerpenguins")
 install.packages("assertr")
-install.packages("lubridate")
 install.packages("stringdist")
 install.packages("GGally")
-install.packages("sf")
-install.packages("taxize")
 
-library(readr)
 library(tidyverse)
-library(palmerpenguins)
 library(assertr)
-library(lubridate)
 library(stringdist)
 library(GGally)
-library(sf)
-library(taxize)
 
 #Set working directory
 
@@ -90,11 +81,11 @@ bromeliads_clean <- bromeliads_messy %>%
   )
 
 #Verify that number of entries in the new columns didn't change, and that all unique entries are spelled correctly
-sum(!is.na(bromeliads_clean$species_clean)) #still 76 entries
-table(bromeliads_clean$species_clean) #no mistakes identified
+sum(!is.na(bromeliads_clean$species_clean)) #still 76 entries - looks good
+table(bromeliads_clean$species_clean) #no mistakes identified - looks good
 
-sum(!is.na(bromeliads_clean$habitat_clean)) #still 18 entries
-table(bromeliads_clean$habitat_clean) #no mistakes identified 
+sum(!is.na(bromeliads_clean$habitat_clean)) #still 18 entries - looks good
+table(bromeliads_clean$habitat_clean) #no mistakes identified - looks good
 
 
 ##Move new "clean" columns beside where the original columns are located in the dataframe.To avoid redundancy, delete original "species" and "habitat" columns.
@@ -127,7 +118,7 @@ bromeliads_clean %>%
 hist(bromeliads_clean$max_water, nclass = 30) 
   #clear outlier >6000 and some possible outliers >1000
 hist(bromeliads_clean$longest_leaf, nclass = 30) 
-  #animpossible negative value is present
+  #an impossible negative value is present
 hist(bromeliads_clean$total_detritus, nclass = 30) 
   #clear outlier >800 and an impossible negative value`
 
@@ -182,7 +173,7 @@ td_outlier #view values
 #the largest value (1000) appears to be unrealistic compared to the next highest values all below 200. This is a likely outlier based on this data set despite my limited knowledge of this study organism. 
 
 
-##Choose a user-defined maximum threshold for max water, longest leaf, and total detritus variables. Any value outside of these thresholds will be considered outliers. 
+##Choose a user-defined maximum threshold for max water, longest leaf, and total detritus variables. Any value above of this thresholds will be considered outliers. 
 #NOTE: Change this value as required. Arbitrary threshold values based on visual observation of histogram distribution are selected for the purposes of this assignment. To define real and plausible thresholds, consult expert on the data set. 
 
 mw_maxthreshold <- 2000
@@ -205,6 +196,12 @@ bromeliads_clean <- bromeliads_clean %>%
                                         total_detritus < 0 ~ NA, 
                                           TRUE ~ total_detritus))
 
+#Verify that values (within range) are the same between new and old columns.
+bromeliads_clean %>%
+  select(max_water, max_water_clean, longest_leaf, longest_leaf_clean, total_detritus, total_detritus_clean) %>%
+  head(20) #looks good
+
+
 #Check if outliers were removed
 hist(bromeliads_clean$max_water_clean) #looks better - still some possible outliers that I would consider removing if I knew biological context for these values
 hist(bromeliads_clean$longest_leaf_clean) #looks good
@@ -223,7 +220,6 @@ head(bromeliads_clean) #Looks good
 dim(bromeliads_messy) # Looks good (still 76 rows and 18 columns)
 str(bromeliads_messy) # Looks good
 summary(bromeliads_messy) # Looks good
-
 
 
 ## END
