@@ -218,7 +218,7 @@ bromeliads_clean <- bromeliads_clean %>%
   relocate(longest_leaf_clean, .after = longest_leaf) %>%
   select(-c(max_water, total_detritus, longest_leaf))
 
-# Check dataframe to ensure that original columns have been replaced with clean columns. Verify that the dataframe's structure and properties are the same as before cleaning
+# Check dataframe to ensure that original columns have been replaced with clean columns. Verify that the data frame structure and properties are the same as before cleaning
 head(bromeliads_clean) #Looks good
 dim(bromeliads_messy) # Looks good (still 76 rows and 18 columns)
 str(bromeliads_messy) # Looks good
