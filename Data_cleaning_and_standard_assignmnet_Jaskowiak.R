@@ -41,10 +41,13 @@ setwd("~/Simon Fraser University/Classes/Scientific Data Management for Ecology 
 bromeliads_messy <- read_csv("BWG_database_messy/bwgv1_bromeliads_messy.csv")
 
 #Explore the data
-dim(bromeliads_messy) # 76 rows and 18 columns
+dim(bromeliads_messy) # 76 rows and 18 columns- Varify that the number of rows reflects number of observations in your metadata
 head(bromeliads_messy, 10) # view first 10 rows of data
 str(bromeliads_messy) # check the structure
 summary(bromeliads_messy) # summarize the dataset
+
+#make "n_rows" the number of rows in the data that you can plug into more complex operations later. Change as needed based on the metadata.
+n_rows <- 76 #change this number based on how many observations you know exist in the metadata
 
 
 #-------------------------------------------------------------------------------------
@@ -126,7 +129,7 @@ hist(bromeliads_clean$total_detritus, nclass = 30)
 ##Use assert() and insist() to identify outliers and impossible values in max_water, longest_leaf, total_detritus
 bromeliads_clean %>%
   chain_start %>%
-  verify(nrow(.) == 76) %>% 
+  verify(nrow(.) == n_rows) %>% #"n_rows" represents number of rows that you should have based on the metadata
   #are there 76 rows as expected?
   assert(within_bounds(0, Inf), 
          c(max_water, longest_leaf, total_detritus)) %>% 
